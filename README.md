@@ -46,43 +46,20 @@ This project includes:
 
 ## Usage
 
-### Running Tests
+### Running the Test
 
-To run all the tests in the project, execute the following command:
-
-```shell
-npx hardhat test
-```
-
-You can also selectively run the Solidity or `node:test` tests:
+1. Copy the example environment file and configure your credentials:
 
 ```shell
-npx hardhat test solidity
-npx hardhat test nodejs
+cp .env.example .env
 ```
 
-### Make a deployment to Sepolia
+2. Edit `.env` and add your `SEPOLIA_RPC_URL` and `MNEMONIC`
 
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
-
-To run the deployment to a local chain:
+3. Run the EIP-7702 context preservation bug test:
 
 ```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
+npx hardhat test ./test/SetCodePayableFunctionQuestion.ts --network sepolia
 ```
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
-
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
-
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
-
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
-```
-
-After setting the variable, you can run the deployment with the Sepolia network:
-
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
-```
+The test will demonstrate the bug by showing that a transaction succeeds even when the delegated EOA has insufficient balance, because the sponsor's balance is incorrectly used instead.
