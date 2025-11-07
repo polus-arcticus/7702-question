@@ -26,6 +26,36 @@ This project demonstrates a critical bug in EIP-7702 implementations regarding `
 
 **The Problem:** The delegated EOA correctly receives funds at `address(this)` (because that's where the code is executing), but the sponsor incorrectly pays for them (because `msg.sender` and `msg.value` come from the sponsor's context).
 
+## The Situation
+
+Here's what happens in the test:
+
+1. **Deploy Counter contract** - A user deploys `Counter.sol` to the network
+2. **Delegator sets code** - The delegated EOA signs an authorization to set their code to the deployed Counter address (EIP-7702)
+3. **Encode function call** - We encode the `incrementPayable(amount)` function where `amount` must equal `msg.value`
+4. **The crafty delegator** - The delegated EOA has insufficient funds (0.0005 ETH) but asks a sponsor to execute a transaction requiring 0.001 ETH
+5. **Sign authorization** - The delegator signs the authorization and passes it to the sponsor
+6. **Sponsor executes** - The sponsor (who has sufficient funds) submits the transaction with the authorization list
+
+**Expected:** Transaction should revert because the delegated EOA can't afford it.
+
+**Actual:** Transaction succeeds because the sponsor's balance is used instead, and the delegated EOA receives the funds!
+
+### Why Both Should Be Delegated EOA
+
+When the code executes at the delegated EOA's address:
+
+**`address(this)` = delegated EOA** ✓
+- Because EIP-7702 sets the code AT the delegated EOA's address
+- The code is executing in the context of the delegated EOA
+- This is working correctly
+
+**`msg.sender` = delegated EOA** ✓ (but currently broken)
+- Context preservation: the delegated EOA is the account executing the code
+- The sponsor is just submitting the transaction on behalf of the delegated EOA
+- `msg.sender` should reflect who is executing the code, not who submitted the transaction
+- This is currently returning the sponsor's address instead
+
 ## The Test
 
 The test demonstrates this bug by:
